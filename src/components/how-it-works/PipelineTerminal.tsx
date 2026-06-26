@@ -37,20 +37,23 @@ export function PipelineTerminal({ theme }: PipelineTerminalProps) {
     const fullText = phases[activePhase].log;
     setDisplayText('');
     
+    let currentText = '';
     let index = 0;
-    const interval = setInterval(() => {
+    
+    function type() {
       if (!active) return;
       if (index < fullText.length) {
-        setDisplayText((prev) => prev + fullText[index]);
+        currentText += fullText[index];
+        setDisplayText(currentText);
         index++;
-      } else {
-        clearInterval(interval);
+        setTimeout(type, 12);
       }
-    }, 12); // Fast, high-fidelity typing effect
+    }
+    
+    type();
 
     return () => {
       active = false;
-      clearInterval(interval);
     };
   }, [activePhase]);
 
@@ -86,7 +89,7 @@ export function PipelineTerminal({ theme }: PipelineTerminalProps) {
 
         {/* Col-Span 7: Real-Time Operations Terminal Panel */}
         <div className="lg:col-span-7 w-full">
-          <div className="w-full bg-[#172836] text-white border-2 border-[#172836] dark:border-white rounded-xl shadow-[6px_6px_0px_0px_rgba(255,200,1,1)] p-5 font-mono text-xs leading-relaxed overflow-hidden relative min-h-[260px] flex flex-col justify-between">
+          <div className="w-full bg-[#172836] text-white border-2 border-[#172836] dark:border-white rounded-xl shadow-[6px_6px_0px_0px_rgba(255,200,1,1)] dark:shadow-none p-5 font-mono text-xs leading-relaxed overflow-hidden relative min-h-[260px] flex flex-col justify-between">
             
             {/* Top Bar Window Rails */}
             <div>
