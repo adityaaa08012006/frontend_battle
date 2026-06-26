@@ -18,13 +18,13 @@ export const PRICING_TIERS: PricingTierConfig[] = [
   {
     id: 'starter',
     name: 'Starter',
-    baseMonthlyRate: 29,
+    baseMonthlyRate: 15,
     description: 'Perfect for small teams and developers beginning automation.'
   },
   {
     id: 'pro',
-    name: 'Pro',
-    baseMonthlyRate: 79,
+    name: 'Professional',
+    baseMonthlyRate: 49,
     description: 'Advanced capabilities for scaling platform tasks.'
   },
   {
@@ -38,7 +38,7 @@ export const PRICING_TIERS: PricingTierConfig[] = [
 export const REGIONAL_TARIFFS = {
   INR: { symbol: '₹', multiplier: 83, label: 'INR (₹)' },
   USD: { symbol: '$', multiplier: 1, label: 'USD ($)' },
-  EUR: { symbol: '€', multiplier: 0.9, label: 'EUR (€)' }
+  EUR: { symbol: '€', multiplier: 0.92, label: 'EUR (€)' }
 };
 
 export const ANNUAL_DISCOUNT_MULTIPLIER = 0.8; // Flat 20% discount multiplier

@@ -1,74 +1,113 @@
-import React, { useEffect, useRef } from 'react';
-import { pricingStore, PRICING_TIERS, CurrencyCode, BillingCycle } from './PricingStore';
+import React, { useEffect, useRef, useState } from 'react';
+import { pricingStore, PRICING_TIERS, BillingCycle } from './PricingStore';
 import { PriceDisplay } from './PriceDisplay';
+import { CurrencyDropdown } from './CurrencyDropdown';
 
-export const PricingMatrix: React.FC = () => {
-  // Button references to allow direct DOM styling updates (performance isolation)
+interface PricingMatrixProps {
+  theme: 'light' | 'dark';
+}
+
+export const PricingMatrix: React.FC<PricingMatrixProps> = ({ theme }) => {
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+
+  // Toggle button DOM references
   const monthlyBtnRef = useRef<HTMLButtonElement>(null);
   const annualBtnRef = useRef<HTMLButtonElement>(null);
-  const usdBtnRef = useRef<HTMLButtonElement>(null);
-  const eurBtnRef = useRef<HTMLButtonElement>(null);
-  const inrBtnRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    const updateButtonsDOM = (currency: CurrencyCode, cycle: BillingCycle) => {
-      // 1. Update Billing Toggles (Selected snaps into Forsythia box with 2px deep border, no layout shift)
-      if (cycle === 'monthly') {
-        monthlyBtnRef.current?.classList.add('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-        monthlyBtnRef.current?.classList.remove('text-oceanic-noir/40', 'border-transparent');
-        
-        annualBtnRef.current?.classList.remove('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-        annualBtnRef.current?.classList.add('text-oceanic-noir/40', 'border-transparent');
+  // Sliding capsule background elements
+  const billingHighlightRef = useRef<HTMLDivElement>(null);
+
+  // Maintain current theme in a ref to prevent stale closures in store subscriptions
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
+
+  const updateButtonsDOM = (cycle: BillingCycle) => {
+    const currentTheme = themeRef.current;
+    
+    // Update Billing Switcher
+    const activeCycleBtn = cycle === 'monthly' ? monthlyBtnRef.current : annualBtnRef.current;
+    const inactiveCycleBtn = cycle === 'monthly' ? annualBtnRef.current : monthlyBtnRef.current;
+
+    if (activeCycleBtn && inactiveCycleBtn && billingHighlightRef.current) {
+      if (currentTheme === 'light') {
+        activeCycleBtn.className = "relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none text-[#172836] font-bold";
+        inactiveCycleBtn.className = "relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none text-[#172836]/50 hover:text-[#172836]/80 transition-colors";
       } else {
-        annualBtnRef.current?.classList.add('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-        annualBtnRef.current?.classList.remove('text-oceanic-noir/40', 'border-transparent');
-        
-        monthlyBtnRef.current?.classList.remove('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-        monthlyBtnRef.current?.classList.add('text-oceanic-noir/40', 'border-transparent');
+        // Dark theme: Active must be text-[#172836] to ensure contrast on the bright Forsythia background
+        activeCycleBtn.className = "relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none text-[#172836] font-bold";
+        inactiveCycleBtn.className = "relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none text-white/40 hover:text-white/80 transition-colors";
       }
 
-      // 2. Update Currency selectors
-      const currencyRefs = {
-        USD: usdBtnRef.current,
-        EUR: eurBtnRef.current,
-        INR: inrBtnRef.current,
-      };
+      // Slide and resize highlight capsule
+      billingHighlightRef.current.style.left = `${activeCycleBtn.offsetLeft}px`;
+      billingHighlightRef.current.style.top = `${activeCycleBtn.offsetTop}px`;
+      billingHighlightRef.current.style.width = `${activeCycleBtn.offsetWidth}px`;
+      billingHighlightRef.current.style.height = `${activeCycleBtn.offsetHeight}px`;
+    }
+  };
 
-      (Object.keys(currencyRefs) as CurrencyCode[]).forEach((code) => {
-        const btn = currencyRefs[code];
-        if (!btn) return;
-        if (currency === code) {
-          btn.classList.add('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-          btn.classList.remove('text-oceanic-noir/40', 'border-transparent');
-        } else {
-          btn.classList.remove('bg-forsythia', 'text-oceanic-noir', 'font-bold', 'border-oceanic-noir');
-          btn.classList.add('text-oceanic-noir/40', 'border-transparent');
-        }
-      });
-    };
-
-    // Initial state alignment
+  useEffect(() => {
+    // Initial capsule positioning
     const initial = pricingStore.getState();
-    updateButtonsDOM(initial.currency, initial.billingCycle);
+    const timer = setTimeout(() => {
+      updateButtonsDOM(initial.billingCycle);
+    }, 50);
 
-    // Subscribe to store events
+    // Subscribe to store events (updating highlights in the DOM, bypass React re-render)
     const unsubscribe = pricingStore.subscribe((state) => {
-      updateButtonsDOM(state.currency, state.billingCycle);
+      updateButtonsDOM(state.billingCycle);
     });
 
-    return unsubscribe;
+    // Recalculate offsets on window resize
+    const handleResize = () => {
+      const state = pricingStore.getState();
+      updateButtonsDOM(state.billingCycle);
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
+
+  // Update capsule styles immediately on theme toggle
+  useEffect(() => {
+    const state = pricingStore.getState();
+    updateButtonsDOM(state.billingCycle);
+  }, [theme]);
+
+  const unselectedBtnClass = theme === 'light'
+    ? 'text-[#172836]/50 hover:text-[#172836]/80 transition-colors font-bold'
+    : 'text-white/40 hover:text-white/80 transition-colors font-bold';
 
   return (
     <div className="w-full flex flex-col items-center">
-      {/* Control Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-6 p-3 mb-16 bg-white border border-oceanic-noir/15 rounded-xl w-full max-w-2xl shadow-none">
-        {/* Billing cycle controls */}
-        <div className="flex items-center gap-1 w-full sm:w-auto bg-oceanic-noir/[0.03] border border-oceanic-noir/10 p-1 rounded-xl">
+      {/* 44px+ Touch-optimized slider controls - Neo-Brutalist Border Styling */}
+      <div className={`flex flex-col sm:flex-row items-center justify-between gap-4 p-2.5 mb-4 border-2 w-full max-w-2xl shadow-none transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        theme === 'light' 
+          ? 'bg-white border-[#172836] shadow-[4px_4px_0px_0px_rgba(23,40,54,1)]' 
+          : 'bg-[#172836]/40 border-white/20 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.15)]'
+      }`}>
+        
+        {/* Billing cycle slider container */}
+        <div className={`relative overflow-hidden p-1 border rounded-lg inline-flex items-center w-full sm:w-auto transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          theme === 'light'
+            ? 'bg-oceanic-noir/[0.03] border-[#172836]/10'
+            : 'bg-white/[0.03] border-white/10'
+        }`}>
+          {/* Kinetic sliding capsule */}
+          <div
+            ref={billingHighlightRef}
+            className="absolute bg-forsythia rounded-md shadow-none transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
+            style={{ left: 4, top: 4, width: 0, height: 0 }}
+          />
           <button
             ref={monthlyBtnRef}
             onClick={() => pricingStore.setState({ billingCycle: 'monthly' })}
-            className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 border-2 border-transparent rounded-lg text-xs font-mono tracking-wider transition-all duration-180 cursor-pointer"
+            className={`relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none ${unselectedBtnClass}`}
             aria-label="Select monthly billing"
           >
             MONTHLY
@@ -76,164 +115,185 @@ export const PricingMatrix: React.FC = () => {
           <button
             ref={annualBtnRef}
             onClick={() => pricingStore.setState({ billingCycle: 'annual' })}
-            className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 border-2 border-transparent rounded-lg text-xs font-mono tracking-wider transition-all duration-180 cursor-pointer"
+            className={`relative z-10 flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-lg text-xs font-mono tracking-wider cursor-pointer focus:outline-none ${unselectedBtnClass}`}
             aria-label="Select annual billing"
           >
             ANNUAL -20%
           </button>
         </div>
 
-        {/* Currency selection tabs */}
-        <div className="flex items-center gap-1 w-full sm:w-auto bg-oceanic-noir/[0.03] border border-oceanic-noir/10 p-1 rounded-xl">
-          <button
-            ref={usdBtnRef}
-            onClick={() => pricingStore.setState({ currency: 'USD' })}
-            className="flex-1 sm:flex-initial min-h-[44px] min-w-[44px] px-4 py-2.5 border-2 border-transparent rounded-lg text-xs font-mono transition-all duration-180 cursor-pointer"
-            aria-label="Use USD pricing"
-          >
-            USD ($)
-          </button>
-          <button
-            ref={eurBtnRef}
-            onClick={() => pricingStore.setState({ currency: 'EUR' })}
-            className="flex-1 sm:flex-initial min-h-[44px] min-w-[44px] px-4 py-2.5 border-2 border-transparent rounded-lg text-xs font-mono transition-all duration-180 cursor-pointer"
-            aria-label="Use EUR pricing"
-          >
-            EUR (€)
-          </button>
-          <button
-            ref={inrBtnRef}
-            onClick={() => pricingStore.setState({ currency: 'INR' })}
-            className="flex-1 sm:flex-initial min-h-[44px] min-w-[44px] px-4 py-2.5 border-2 border-transparent rounded-lg text-xs font-mono transition-all duration-180 cursor-pointer"
-            aria-label="Use INR pricing"
-          >
-            INR (₹)
-          </button>
+        {/* Currency selection custom dropdown container */}
+        <div className="relative">
+          <CurrencyDropdown theme={theme} />
         </div>
       </div>
 
-      {/* Grid structure */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 w-full max-w-6xl">
+      {/* Uniform Layout Grid Framework (Not asymmetric sizing) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch w-full max-w-6xl transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]">
         {PRICING_TIERS.map((tier) => {
-          const isRecommended = tier.id === 'pro';
+          const isSelected = selectedTier === tier.id;
 
-          return (
-            <div
-              key={tier.id}
-              className={`bg-white text-oceanic-noir rounded-xl p-8 flex flex-col justify-between transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer min-h-[480px] shadow-none relative ${
-                isRecommended
-                  ? 'border border-deep-saffron'
-                  : 'border border-oceanic-noir/15'
-              }`}
-            >
+          // Dynamic class resolution depending on selection and theme
+          const cardTitleStyle = isSelected
+            ? (theme === 'light' ? 'text-white font-mono tracking-tight font-bold' : 'text-[#172836] font-mono tracking-tight font-bold')
+            : (theme === 'light' ? 'text-slate-900 font-mono tracking-tight font-bold' : 'text-white font-mono tracking-tight font-bold');
+
+          const cardDescStyle = isSelected
+            ? (theme === 'light' ? 'text-white/70 font-sans text-sm font-medium tracking-normal normal-case' : 'text-[#172836]/80 font-sans text-sm font-medium tracking-normal normal-case')
+            : (theme === 'light' ? 'text-slate-900 font-sans text-sm font-medium tracking-normal normal-case' : 'text-white/70 font-sans text-sm font-medium tracking-normal normal-case');
+
+          const cardDividerStyle = isSelected
+            ? (theme === 'light' ? 'border-white/20' : 'border-[#172836]/20')
+            : (theme === 'light' ? 'border-[#172836]/15' : 'border-white/15');
+
+          const cardBulletSpanStyle = isSelected
+            ? (theme === 'light' ? 'bg-[#FFC801]' : 'bg-[#172836]')
+            : (theme === 'light' ? 'bg-[#172836]/30' : 'bg-forsythia');
+
+          const cardFeatureListStyle = isSelected
+            ? (theme === 'light' ? 'text-[#FFC801] font-sans text-sm font-medium tracking-normal normal-case' : 'text-[#172836] font-sans text-sm font-medium tracking-normal normal-case')
+            : (theme === 'light' ? 'text-slate-900 font-sans text-sm font-medium tracking-normal normal-case' : 'text-white/70 font-sans text-sm font-medium tracking-normal normal-case');
+
+          const cardButtonStyle = isSelected
+            ? (theme === 'light' 
+                ? 'bg-[#FFC801] text-[#172836] border-2 border-[#FFC801] hover:bg-[#FFC801]/90 shadow-[2px_2px_0px_0px_rgba(255,255,255,0.15)] font-mono font-extrabold uppercase tracking-tight' 
+                : 'bg-[#172836] text-white border-2 border-[#172836] hover:bg-[#172836]/90 shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)] font-mono font-extrabold uppercase tracking-tight')
+            : (theme === 'light'
+                ? 'bg-white text-[#172836] border-2 border-[#172836] hover:bg-[#172836] hover:text-white shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)] font-mono font-extrabold uppercase tracking-tight'
+                : 'bg-white/[0.04] border-2 border-white/20 text-white hover:bg-white/[0.08] hover:border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] font-mono font-extrabold uppercase tracking-tight');
+
+          const cardContent = (
+            <>
               <div>
                 {/* Header Section */}
-                <div className="flex items-center justify-between mb-4">
-                  {/* Enforce JetBrains Mono font-mono for Pricing Plan Headers */}
-                  <h3 className="font-mono font-bold text-xl tracking-wider uppercase">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className={`text-lg tracking-wider flex items-center gap-2 ${cardTitleStyle}`}>
                     {tier.name}
                   </h3>
-                  {isRecommended && (
-                    <span className="text-[10px] font-mono tracking-widest text-deep-saffron uppercase font-bold">
+                  {tier.id === 'pro' && (
+                    <span className={`text-[10px] font-mono tracking-widest uppercase font-extrabold px-2 py-0.5 rounded border ${
+                      isSelected 
+                        ? (theme === 'light' ? 'text-forsythia bg-white/10 border-white/20' : 'text-[#172836] bg-[#172836]/10 border-[#172836]/20')
+                        : 'text-forsythia bg-oceanic-noir border-forsythia/35'
+                    }`}>
                       RECOMMENDED
                     </span>
                   )}
                 </div>
 
                 {/* Subtitle description */}
-                <p className="font-sans text-xs text-oceanic-noir/60 leading-relaxed mb-6">
+                <p className={`text-xs leading-relaxed mb-4 ${cardDescStyle}`}>
                   {tier.description}
                 </p>
 
                 {/* Isolated Pricing values */}
-                <div className="py-6 border-y border-oceanic-noir/5 mb-8">
+                <div className={`py-4 border-y mb-5 ${cardDividerStyle}`}>
                   <PriceDisplay tierName={tier.name} />
                 </div>
 
-                {/* Structural feature list */}
-                <ul className="flex flex-col gap-4 font-sans text-xs text-oceanic-noir/75">
+                {/* Feature list with individual hover states */}
+                <ul className="flex flex-col gap-3 text-xs">
                   {tier.id === 'starter' && (
                     <>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        AI Automation
+                      </li>
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Analytics
+                      </li>
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        API Access
+                      </li>
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
                         5,000 queries/month
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        1 autonomous agent active
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Standard latency execution
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Community support access
                       </li>
                     </>
                   )}
                   {tier.id === 'pro' && (
                     <>
-                      <li className="flex items-center gap-2 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-deep-saffron" />
-                        50,000 queries/month
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Everything in Starter
                       </li>
-                      <li className="flex items-center gap-2 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-deep-saffron" />
-                        5 autonomous agents active
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Unlimited Workflows
                       </li>
-                      <li className="flex items-center gap-2 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-deep-saffron" />
-                        Priority execution latency
-                      </li>
-                      <li className="flex items-center gap-2 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-deep-saffron" />
-                        24/7 premium support
-                      </li>
-                      <li className="flex items-center gap-2 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-deep-saffron" />
-                        API gateway access
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Priority Support
                       </li>
                     </>
                   )}
                   {tier.id === 'enterprise' && (
                     <>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Unlimited queries/month
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Everything in Pro
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Unlimited active agents
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Dedicated Engineering Partner
                       </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Ultra-low latency SLA
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        Dedicated engineering partner
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-nocturnal-expedition" />
-                        SSO & Advanced Security
+                      <li className={`group/item flex items-center gap-2 transition-colors duration-200 ${cardFeatureListStyle}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${cardBulletSpanStyle}`} />
+                        Dedicated Uptime SLA
                       </li>
                     </>
                   )}
                 </ul>
               </div>
 
-              {/* Action Button */}
+              {/* Action Button: flips color selection states */}
               <button
-                className={`w-full mt-8 py-3.5 rounded-lg font-mono text-xs font-bold tracking-widest transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-                  isRecommended
-                    ? 'bg-deep-saffron text-white hover:bg-deep-saffron/90'
-                    : 'bg-oceanic-noir text-white hover:bg-oceanic-noir/90'
-                }`}
+                className={`w-full mt-6 rounded-lg transition-all duration-300 cursor-pointer py-3.5 ${cardButtonStyle}`}
                 aria-label={`Acquire ${tier.name} Tier`}
               >
                 ACQUIRE TIER
               </button>
+            </>
+          );
+
+          // Render active or unselected cards with selections inversion parameters
+          if (isSelected) {
+            return (
+              <div
+                key={tier.id}
+                onClick={() => setSelectedTier(tier.id)}
+                className={`rounded-xl p-1 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between min-h-[380px] cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-[#172836] text-white border-2 border-[#172836] shadow-[6px_6px_0px_0px_rgba(255,200,1,1)] scale-[1.01]'
+                    : 'bg-[#FFC801] text-[#172836] border-2 border-[#FFC801] shadow-[6px_6px_0px_0px_rgba(255,255,255,0.15)] scale-[1.01]'
+                } z-10`}
+              >
+                {/* Double-hairline outer & inner borders */}
+                <div className={`flex-1 flex flex-col justify-between p-4 border-2 rounded-[10px] ${
+                  theme === 'light' ? 'border-white/20' : 'border-[#172836]/20'
+                }`}>
+                  {cardContent}
+                </div>
+              </div>
+            );
+          }
+
+          // Unselected card structure
+          return (
+            <div
+              key={tier.id}
+              onClick={() => setSelectedTier(tier.id)}
+              className={`rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 flex flex-col justify-between min-h-[380px] cursor-pointer border-2 ${
+                theme === 'light'
+                  ? 'bg-white border-[#172836] text-slate-900 shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)] hover:shadow-[6px_6px_0px_0px_rgba(23,40,54,1)]'
+                  : 'bg-white/[0.02] backdrop-blur-md border-white/20 text-white hover:border-white hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.1)]'
+              }`}
+            >
+              <div className="flex-1 flex flex-col justify-between">
+                {cardContent}
+              </div>
             </div>
           );
         })}

@@ -43,13 +43,13 @@ export const PriceDisplay: React.FC<PriceDisplayProps> = ({ tierName }) => {
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline gap-1">
         {/* Isolated numeric text node */}
-        <span ref={priceRef} className="text-4xl font-extrabold font-mono text-oceanic-noir">
+        <span ref={priceRef} className="text-4xl font-extrabold font-mono text-current">
           -
         </span>
-        <span className="text-sm font-mono text-oceanic-noir/50">/mo</span>
+        <span className="text-sm font-mono opacity-50">/mo</span>
       </div>
       {/* Isolated billing period text node */}
-      <span ref={billingLabelRef} className="text-[10px] font-mono text-oceanic-noir/40 uppercase tracking-wider min-h-[14px]">
+      <span ref={billingLabelRef} className="text-[10px] font-mono opacity-40 uppercase tracking-wider min-h-[14px]">
         -
       </span>
     </div>

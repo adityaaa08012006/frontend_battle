@@ -1,485 +1,936 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PricingMatrix } from './components/pricing/PricingMatrix';
 import { BentoAccordionWrapper } from './components/bento-accordion/BentoAccordionWrapper';
-import { pricingStore, CurrencyCode } from './components/pricing/PricingStore';
+import { CurrencyDropdown } from './components/pricing/CurrencyDropdown';
+import { FAQAccordion } from './components/faq/FAQAccordion';
+import { PipelineTerminal } from './components/how-it-works/PipelineTerminal';
+
+interface ReviewItem {
+  name: string;
+  role: string;
+  initials: string;
+  avatarBg: string;
+  headline: string;
+  body: React.ReactNode;
+}
+
+const REVIEWS: ReviewItem[] = [
+  {
+    name: "Sarah Johnson",
+    role: "CTO",
+    initials: "SJ",
+    avatarBg: "#FFD1D1",
+    headline: "Revolutionized our data pipelines",
+    body: (
+      <>
+        Aegis.AI&apos;s automated agents were an absolute game-changer for our infrastructure layout. We saw a <span className="bg-[#FFC801] px-1 font-bold">70% operational workload reduction</span> within the first week of deployment. The telemetry tracking runs flawlessly 24/7.
+      </>
+    )
+  },
+  {
+    name: "Marcus Vance",
+    role: "Lead Architect",
+    initials: "MV",
+    avatarBg: "#D1E8FF",
+    headline: "Saved 40+ engineering hours weekly",
+    body: (
+      <>
+        This platform saved our team <span className="bg-[#FFC801] px-1 font-bold">over 40 hours in a month alone</span>. Messy cloud data mapping schemas used to drag on for days, but the intelligent pipeline engines cleaned up our stack entirely.
+      </>
+    )
+  },
+  {
+    name: "Elena Rostova",
+    role: "VP of Devops",
+    initials: "ER",
+    avatarBg: "#D1FFE3",
+    headline: "The easiest adoptable automation engine",
+    body: (
+      <>
+        I&apos;ve never seen data orchestration scale at this velocity with zero performance drop. We seamlessly integrated <span className="bg-[#FFC801] px-1 font-bold">300+ staging services</span> effortlessly. It saved us thousands of engineering hours down the line.
+      </>
+    )
+  },
+  {
+    name: "David Kim",
+    role: "Tech Lead",
+    initials: "DK",
+    avatarBg: "#FFEBD1",
+    headline: "Flawless security and isolation",
+    body: (
+      <>
+        With strictly enforced SOC2 isolation, we safely migrated <span className="bg-[#FFC801] px-1 font-bold">our entire financial telemetry</span> without exposing a single sensitive payload. Absolute peace of mind.
+      </>
+    )
+  },
+  {
+    name: "Aria Chen",
+    role: "Engineering Director",
+    initials: "AC",
+    avatarBg: "#E8D1FF",
+    headline: "Zero render delay at scale",
+    body: (
+      <>
+        Our live telemetry dashboards stream analytics at sub-millisecond rates. Our users experienced a <span className="bg-[#FFC801] px-1 font-bold">10x boost in visual refresh times</span>. Incredible performance engineering.
+      </>
+    )
+  },
+  {
+    name: "Liam O'Connor",
+    role: "Senior Developer",
+    initials: "LO",
+    avatarBg: "#D1FFF7",
+    headline: "API integrations in minutes",
+    body: (
+      <>
+        Building custom webhooks used to take days of schema adjustments. Aegis.AI transformed this into a <span className="bg-[#FFC801] px-1 font-bold">5-minute drag-and-drop task</span>. Simple, clean, and highly robust.
+      </>
+    )
+  },
+  {
+    name: "Sofia Rossi",
+    role: "Operations Manager",
+    initials: "SR",
+    avatarBg: "#FFF7D1",
+    headline: "Cut server costs in half",
+    body: (
+      <>
+        By automating speculative node allocation, Aegis.AI optimized our idle compute capacity, leading to a <span className="bg-[#FFC801] px-1 font-bold">45% reduction in cloud spend</span>. A must-have for modern SaaS.
+      </>
+    )
+  },
+  {
+    name: "Alex Mercer",
+    role: "Infrastructure Architect",
+    initials: "AM",
+    avatarBg: "#FFD1E8",
+    headline: "Resilient micro-state enclaves",
+    body: (
+      <>
+        We tested Aegis with high-density simulated failovers. The isolated micro-state engines handled <span className="bg-[#FFC801] px-1 font-bold">10M+ concurrent queries</span> with absolutely zero memory leaks.
+      </>
+    )
+  },
+  {
+    name: "Yuki Tanaka",
+    role: "Head of Product",
+    initials: "YT",
+    avatarBg: "#E3FFD1",
+    headline: "Exceptional developer experience",
+    body: (
+      <>
+        The team transition was completed in under two days. The design aesthetic is gorgeous and the <span className="bg-[#FFC801] px-1 font-bold">real-time telemetry is incredibly intuitive</span>. Love the branding!
+      </>
+    )
+  },
+  {
+    name: "James Peterson",
+    role: "Lead Security Engineer",
+    initials: "JP",
+    avatarBg: "#D1E3FF",
+    headline: "Bulletproof access control",
+    body: (
+      <>
+        Aegis role-based workflows made auditing our compliance pipeline extremely straightforward. We locked down <span className="bg-[#FFC801] px-1 font-bold">all staging enclaves</span> in under an hour.
+      </>
+    )
+  }
+];
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  const desktopSelectRef = useRef<HTMLSelectElement>(null);
-  const mobileSelectRef = useRef<HTMLSelectElement>(null);
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = pricingStore.subscribe((state) => {
-      if (desktopSelectRef.current) {
-        desktopSelectRef.current.value = state.currency;
-      }
-      if (mobileSelectRef.current) {
-        mobileSelectRef.current.value = state.currency;
-      }
-    });
-    return unsubscribe;
-  }, []);
+    if (showComingSoon) {
+      const timer = setTimeout(() => {
+        setShowComingSoon(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showComingSoon]);
+
+  // Set the body background and grid pattern dynamically based on the active theme
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.body.classList.add('dark');
+      document.body.style.background = '#0d2a3a';
+      document.body.style.backgroundImage = 'linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(135deg, #0d2a3a 0%, #142330 50%, #172836 100%)';
+      document.body.style.backgroundSize = '24px 24px, 24px 24px, 100% 100%';
+      document.body.style.backgroundAttachment = 'fixed';
+    } else {
+      document.body.classList.remove('dark');
+      document.body.style.background = '#FFFFFF';
+      document.body.style.backgroundImage = 'radial-gradient(rgba(23, 40, 54, 0.08) 1.2px, transparent 1.2px)';
+      document.body.style.backgroundSize = '24px 24px';
+    }
+  }, [theme]);
+
+  const navLinkStyle = 'font-mono text-xs uppercase tracking-wider font-bold text-slate-700 dark:text-white/80 px-4 py-2 rounded-xl transition-all duration-150 hover:bg-[#FFC801] hover:text-[#172836] dark:hover:text-[#172836] cursor-pointer';
+  const headingStyle = 'font-mono tracking-tight text-slate-900 dark:text-white';
+  const bodyTextStyle = 'font-sans text-sm font-medium text-slate-900 dark:text-white/70 tracking-normal normal-case';
+  const subTextStyle = 'font-mono text-sm md:text-base font-bold tracking-wider text-slate-900 dark:text-white/80 mb-4 block';
+  const borderStyle = theme === 'light' ? 'border-2 border-[#172836]' : 'border-2 border-white/10';
+
+  // Tactile Rounded Theme Capsule Switch
+  const renderThemeToggle = () => (
+    <button
+      onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+      className={`relative w-14 h-8 bg-oceanic-noir/5 dark:bg-white/10 border border-oceanic-noir/10 dark:border-white/10 rounded-full p-1 cursor-pointer flex items-center justify-between transition-colors duration-300 focus:outline-none`}
+      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+    >
+      {/* Moving slider knob */}
+      <div
+        className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white dark:bg-forsythia rounded-full shadow-md transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] transform z-0 ${
+          theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+        }`}
+      />
+      {/* Sun Icon Vector */}
+      <svg
+        className={`w-3.5 h-3.5 z-10 ml-1 transition-colors duration-300 pointer-events-none ${
+          theme === 'light' ? 'text-oceanic-noir' : 'text-white/40'
+        }`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m0-12.728l.707.707m12.728 12.728l.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
+      </svg>
+      {/* Moon Icon Vector */}
+      <svg
+        className={`w-3.5 h-3.5 z-10 mr-1 transition-colors duration-300 pointer-events-none ${
+          theme === 'light' ? 'text-oceanic-noir/30' : 'text-[#172836]'
+        }`}
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        strokeWidth="2.5"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    </button>
+  );
 
   return (
-    <div className="min-h-screen bg-transparent text-oceanic-noir font-sans relative overflow-x-hidden selection:bg-forsythia selection:text-oceanic-noir">
+    <div className={`min-h-screen transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] font-sans relative overflow-x-hidden selection:bg-forsythia selection:text-[#172836] ${
+      theme === 'light' ? 'bg-white text-[#172836]' : 'bg-gradient-to-br from-[#0d2a3a] via-[#142330] to-[#172836] text-white'
+    }`}>
       
       {/* HEADER / NAVIGATION */}
-      <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-white/80 border-b border-oceanic-noir/10">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between" aria-label="Main Navigation">
+      <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-[#0d2a3a]/90 backdrop-blur-md border-b-2 border-slate-900/10 dark:border-white/10 px-6 py-3.5 flex items-center justify-between">
+        <nav className="w-full flex items-center justify-between" aria-label="Main Navigation">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <img src="/assets/SVGs/cube-16-solid.svg" className="w-6 h-6 text-oceanic-noir" alt="AEGIS Brand Mark" />
-            <a href="/" className="font-mono font-bold text-lg tracking-wider text-oceanic-noir transition-colors hover:text-forsythia">
+            <img src="/assets/SVGs/cube-16-solid.svg" className={`w-6 h-6 ${theme === 'light' ? '' : 'invert'}`} alt="AEGIS Brand Mark" />
+            <a href="/" className={`font-mono font-bold text-lg tracking-wider transition-colors hover:text-forsythia ${headingStyle}`}>
               AEGIS.AI
             </a>
           </div>
 
-          {/* Desktop Nav Links (Clean Navigation) */}
-          <ul className="hidden md:flex items-center gap-8 font-mono text-xs">
+          {/* Desktop Nav Links */}
+          <ul className="hidden md:flex items-center gap-6 font-mono text-xs">
             <li>
-              <a href="#features" className="text-oceanic-noir/70 hover:text-oceanic-noir transition-colors cursor-pointer py-2">
+              <a href="#features" className={navLinkStyle}>
                 FEATURES
               </a>
             </li>
             <li>
-              <a href="#analytics" className="text-oceanic-noir/70 hover:text-oceanic-noir transition-colors cursor-pointer py-2">
+              <a href="#analytics" className={navLinkStyle}>
                 PERFORMANCE
               </a>
             </li>
             <li>
-              <a href="#bento" className="text-oceanic-noir/70 hover:text-oceanic-noir transition-colors cursor-pointer py-2">
+              <a href="#bento" className={navLinkStyle}>
                 SHOWCASE
               </a>
             </li>
             <li>
-              <a href="#pricing" className="text-oceanic-noir/70 hover:text-oceanic-noir transition-colors cursor-pointer py-2">
+              <a href="#pricing" className={navLinkStyle}>
                 PRICING
+              </a>
+            </li>
+            <li>
+              <a href="#testimonials" className={navLinkStyle}>
+                REVIEWS
+              </a>
+            </li>
+            <li>
+              <a href="#faq" className={navLinkStyle}>
+                FAQ
               </a>
             </li>
           </ul>
 
           {/* Actions */}
-          <div className="hidden md:flex items-center gap-4">
-            {/* Search Trigger */}
+          <div className="hidden md:flex items-center gap-6">
+            {/* Tactile Theme Switcher */}
+            {renderThemeToggle()}
+
+            {/* Log In Button */}
             <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2.5 rounded-lg border border-oceanic-noir/15 hover:border-oceanic-noir/30 bg-white hover:bg-oceanic-noir/[0.03] transition-all duration-180 ease-out hover:scale-[1.05] active:scale-[0.95] cursor-pointer"
-              aria-label="Search Platform"
+              onClick={() => setShowComingSoon(true)}
+              className="bg-white hover:bg-[#FFC801] dark:bg-[#172836] dark:hover:bg-[#FFC801] text-slate-900 dark:text-white hover:text-[#172836] dark:hover:text-[#172836] font-mono font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded-xl border-2 border-slate-900 dark:border-white shadow-[3px_3px_0px_0px_rgba(23,40,54,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] transition-all duration-200 text-center cursor-pointer"
             >
-              <img src="/assets/SVGs/search.svg" className="w-4 h-4 text-oceanic-noir" alt="" />
+              LOG IN
             </button>
 
-            {/* Currency Selector */}
-            <div className="relative">
-              <select 
-                ref={desktopSelectRef}
-                onChange={(e) => pricingStore.setState({ currency: e.target.value as CurrencyCode })}
-                className="appearance-none font-mono text-xs bg-white border border-oceanic-noir/15 rounded-lg px-3 py-2 pr-8 text-oceanic-noir cursor-pointer hover:border-oceanic-noir/30 focus:outline-none transition-colors"
-                aria-label="Select pricing currency"
-              >
-                <option value="USD" className="bg-white text-oceanic-noir">USD ($)</option>
-                <option value="EUR" className="bg-white text-oceanic-noir">EUR (€)</option>
-                <option value="INR" className="bg-white text-oceanic-noir">INR (₹)</option>
-              </select>
-              <div className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
-                <img src="/assets/SVGs/chevron-down.svg" className="w-3 h-3 opacity-60" alt="" />
-              </div>
-            </div>
-
-            {/* Launch Console Button */}
-            <a
-              href="#pricing"
-              className="font-mono text-xs px-5 py-2.5 bg-forsythia text-oceanic-noir font-bold rounded-lg border-2 border-oceanic-noir transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center cursor-pointer"
+            {/* Sign In Button */}
+            <button
+              onClick={() => setShowComingSoon(true)}
+              className="bg-[#FFC801] text-[#172836] hover:bg-[#FFC801]/90 font-mono font-bold uppercase tracking-wider text-xs px-4 py-2.5 rounded-xl border-2 border-slate-900 dark:border-white shadow-[3px_3px_0px_0px_rgba(23,40,54,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] transition-all duration-200 text-center cursor-pointer"
             >
-              LAUNCH CONSOLE
-            </a>
+              SIGN IN
+            </button>
           </div>
 
           {/* Mobile Buttons */}
           <div className="flex md:hidden items-center gap-3">
-            <button
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="p-2 rounded-lg border border-oceanic-noir/15 bg-white cursor-pointer"
-              aria-label="Search site"
-            >
-              <img src="/assets/SVGs/search.svg" className="w-4 h-4 text-oceanic-noir" alt="" />
-            </button>
+            {/* Tactile Rounded Theme switch (Mobile) */}
+            {renderThemeToggle()}
+            
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg border border-oceanic-noir/15 bg-white cursor-pointer"
+              className={`p-2 rounded-lg border-2 cursor-pointer ${
+                theme === 'light' ? 'border-[#172836] bg-white' : 'border-white/15 bg-white/[0.02]'
+              }`}
               aria-label="Toggle Navigation Menu"
             >
-              <img src={mobileMenuOpen ? "/assets/SVGs/x-mark.svg" : "/assets/SVGs/cube-16-solid.svg"} className="w-5 h-5 text-oceanic-noir" alt="" />
+              <img src={mobileMenuOpen ? "/assets/SVGs/x-mark.svg" : "/assets/SVGs/cube-16-solid.svg"} className={`w-5 h-5 ${theme === 'light' ? '' : 'invert'}`} alt="" />
             </button>
           </div>
         </nav>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-oceanic-noir/10 bg-white px-4 py-6 flex flex-col gap-6">
+          <div className={`md:hidden border-t-2 px-4 py-6 flex flex-col gap-6 transition-colors duration-500 ${
+            theme === 'light' ? 'bg-white border-[#172836]' : 'bg-[#142330] border-white/10'
+          }`}>
             <ul className="flex flex-col gap-4 font-mono text-base">
               <li>
-                <a href="#features" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-oceanic-noir/80 hover:text-oceanic-noir cursor-pointer">
+                <a href="#features" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
                   FEATURES
                 </a>
               </li>
               <li>
-                <a href="#analytics" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-oceanic-noir/80 hover:text-oceanic-noir cursor-pointer">
+                <a href="#analytics" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
                   PERFORMANCE
                 </a>
               </li>
               <li>
-                <a href="#bento" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-oceanic-noir/80 hover:text-oceanic-noir cursor-pointer">
+                <a href="#bento" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
                   SHOWCASE
                 </a>
               </li>
               <li>
-                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block py-2 text-oceanic-noir/80 hover:text-oceanic-noir cursor-pointer">
+                <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
                   PRICING
+                </a>
+              </li>
+              <li>
+                <a href="#testimonials" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
+                  REVIEWS
+                </a>
+              </li>
+              <li>
+                <a href="#faq" onClick={() => setMobileMenuOpen(false)} className={`block py-2 ${theme === 'light' ? 'text-[#172836]/80 hover:text-[#172836]' : 'text-white/80 hover:text-white'} cursor-pointer`}>
+                  FAQ
                 </a>
               </li>
             </ul>
 
-            <div className="flex flex-col gap-4 pt-4 border-t border-oceanic-noir/10">
+            <div className={`flex flex-col gap-4 pt-4 border-t-2 ${theme === 'light' ? 'border-[#172836]' : 'border-white/10'}`}>
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-oceanic-noir/50">CURRENCY</span>
-                <select 
-                  ref={mobileSelectRef}
-                  onChange={(e) => pricingStore.setState({ currency: e.target.value as CurrencyCode })}
-                  className="bg-white border border-oceanic-noir/15 rounded-md px-3 py-1 text-xs font-mono text-oceanic-noir cursor-pointer focus:outline-none"
-                  aria-label="Select currency"
-                >
-                  <option value="USD" className="bg-white text-oceanic-noir">USD ($)</option>
-                  <option value="EUR" className="bg-white text-oceanic-noir">EUR (€)</option>
-                  <option value="INR" className="bg-white text-oceanic-noir">INR (₹)</option>
-                </select>
+                <span className="font-mono text-xs opacity-50">THEME MODE</span>
+                {renderThemeToggle()}
               </div>
-              <a
-                href="#pricing"
-                onClick={() => setMobileMenuOpen(false)}
-                className="block text-center font-mono text-sm py-3 bg-forsythia text-oceanic-noir font-bold rounded-lg border-2 border-oceanic-noir cursor-pointer"
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowComingSoon(true);
+                }}
+                className="block w-full text-center font-mono text-sm py-3 mb-3 bg-white hover:bg-slate-50 text-[#172836] font-bold rounded-lg border-2 border-[#172836] shadow-[3px_3px_0px_0px_rgba(23,40,54,1)] cursor-pointer transition-all duration-150"
               >
-                LAUNCH CONSOLE
-              </a>
+                LOG IN
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setShowComingSoon(true);
+                }}
+                className="block w-full text-center font-mono text-sm py-3 bg-[#FFC801] text-[#172836] font-bold rounded-lg border-2 border-[#172836] shadow-[3px_3px_0px_0px_rgba(23,40,54,1)] cursor-pointer transition-all duration-150"
+              >
+                SIGN IN
+              </button>
             </div>
           </div>
         )}
 
-        {/* Search Overlay */}
-        {searchOpen && (
-          <div className="border-t border-oceanic-noir/10 bg-white px-4 py-4 max-w-7xl mx-auto flex items-center gap-3">
-            <img src="/assets/SVGs/search.svg" className="w-5 h-5 text-oceanic-noir/60" alt="" />
-            <input
-              type="text"
-              placeholder="Search platform documentation, features, integrations..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent border-none text-oceanic-noir placeholder:text-oceanic-noir/30 focus:outline-none font-mono text-sm"
-              autoFocus
-            />
-            <button
-              onClick={() => {
-                setSearchOpen(false);
-                setSearchQuery('');
-              }}
-              className="p-1 hover:bg-oceanic-noir/5 rounded cursor-pointer"
-              aria-label="Close search"
-            >
-              <img src="/assets/SVGs/x-mark.svg" className="w-4 h-4 text-oceanic-noir/60" alt="" />
-            </button>
-          </div>
-        )}
       </header>
 
       <main>
-        {/* HERO SECTION */}
-        <section className="relative pt-20 pb-16 sm:pt-32 sm:pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center border-b border-oceanic-noir/10" aria-labelledby="hero-heading">
-          {/* Main Title - Monospace Header */}
-          <h1 id="hero-heading" className="text-4xl sm:text-6xl lg:text-7xl font-mono font-bold tracking-tight text-oceanic-noir max-w-5xl mx-auto leading-[1.1] mb-6">
-            Automate Data Orchestration at <span className="text-transparent bg-clip-text bg-gradient-to-r from-oceanic-noir via-nocturnal-expedition to-deep-saffron">Next-Gen Speed</span>
+        {/* HERO SECTION - Rebalanced padding for premium rhythm */}
+        <section className="relative pt-12 pb-6 lg:pt-16 lg:pb-8 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto text-center flex flex-col items-center justify-center" aria-labelledby="hero-heading">
+          {/* Main Title - Marblism's signature badges */}
+          <h1 id="hero-heading" className={`text-4xl sm:text-6xl lg:text-7xl font-mono font-bold tracking-tight max-w-5xl mx-auto leading-[1.2] mb-4 ${headingStyle}`}>
+            Automate Data Orchestration at <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]">Next-Gen Speed</span>
           </h1>
 
-          {/* Description - Sans Body */}
-          <p className="text-sm sm:text-lg text-oceanic-noir/75 font-sans max-w-3xl mx-auto leading-relaxed mb-10">
-            A premium, high-converting data automation framework. Connect, synthesize, and run multi-agent workflows with hardware-accelerated latency profiles and real-time visual telemetry.
+          {/* Description */}
+          <p className={`text-xs sm:text-sm font-sans max-w-3xl mx-auto leading-relaxed mb-6 ${bodyTextStyle}`}>
+            Transform messy workflows into intelligent automated pipelines using cutting-edge AI, real-time analytics, and enterprise-grade security.
           </p>
 
           <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
             <a
               href="#pricing"
-              className="w-full sm:w-auto font-mono text-sm px-8 py-4 bg-forsythia text-oceanic-noir font-bold rounded-xl border-2 border-oceanic-noir transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto font-mono text-xs px-6 py-3.5 bg-forsythia text-[#172836] font-bold rounded-xl border-2 border-[#172836] transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center flex items-center justify-center gap-2 cursor-pointer shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]"
             >
-              GET STARTED NOW
+              Start Free
               <img src="/assets/SVGs/arrow-trending-up.svg" className="w-4 h-4 text-oceanic-noir" alt="" />
             </a>
             <a
               href="#analytics"
-              className="w-full sm:w-auto font-mono text-sm px-8 py-4 bg-white border border-oceanic-noir/15 hover:border-oceanic-noir/30 text-oceanic-noir font-semibold rounded-xl transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center cursor-pointer"
+              className={`w-full sm:w-auto font-mono text-xs px-6 py-3.5 border-2 font-bold rounded-xl transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center cursor-pointer shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)] dark:border-white/20 dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.15)] ${
+                theme === 'light'
+                  ? 'bg-white border-[#172836] text-[#172836] hover:bg-[#172836]/5'
+                  : 'bg-white/[0.02] border-white/20 text-white hover:bg-white/[0.05]'
+              }`}
             >
-              VIEW LIVE METRICS
+              Book Demo
             </a>
           </div>
         </section>
 
-        {/* LOGO LOOPING MARQUEE (Clean Partner Names) */}
-        <section className="w-full overflow-hidden py-8 bg-white/30 border-b border-oceanic-noir/10 relative" aria-label="Trusted Enterprise Partners">
-          <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-arctic-powder to-transparent z-10 pointer-events-none" />
-          <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-arctic-powder to-transparent z-10 pointer-events-none" />
-          <div className="flex w-[200%] animate-marquee hover:[animation-play-state:paused]">
-            <div className="flex justify-around w-1/2 min-w-max gap-16 px-8">
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">CHRONOS OS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">APEX INTEGRATIONS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">KINETIC FLOW</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">MATRIX LABS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">NEXUS NET</span>
-            </div>
-            <div className="flex justify-around w-1/2 min-w-max gap-16 px-8" aria-hidden="true">
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">CHRONOS OS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">APEX INTEGRATIONS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">KINETIC FLOW</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">MATRIX LABS</span>
-              <span className="font-mono text-sm tracking-widest text-oceanic-noir/40 font-bold hover:text-oceanic-noir/80 transition-colors cursor-default">NEXUS NET</span>
+        {/* TRUSTED BY MARQUEE */}
+        <section className="w-full pt-1 pb-6 relative flex flex-col items-center gap-3" aria-label="Trusted Enterprise Partners">
+          <span className="font-mono text-xs font-bold uppercase tracking-widest text-slate-800 dark:text-white">
+            Trusted by industry leaders
+          </span>
+          <div className="w-full max-w-7xl mx-auto border-y-2 border-slate-900 dark:border-white/20 py-5 flex items-center justify-between gap-6 px-4">
+            <div className="w-full overflow-hidden">
+              <div className="flex w-[200%] animate-marquee hover:[animation-play-state:paused]">
+                <div className="flex justify-around w-1/2 min-w-max gap-16 px-8">
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>MICROSOFT</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>GOOGLE</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>AMAZON</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>SPOTIFY</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>NETFLIX</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>ADOBE</span>
+                </div>
+                <div className="flex justify-around w-1/2 min-w-max gap-16 px-8" aria-hidden="true">
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>MICROSOFT</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>GOOGLE</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>AMAZON</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>SPOTIFY</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>NETFLIX</span>
+                  <span className={`tracking-widest text-xs font-extrabold transition-colors cursor-default opacity-50 hover:opacity-100 uppercase ${headingStyle}`}>ADOBE</span>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* 4-CARD FEATURE GRID */}
-        <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b border-oceanic-noir/10" aria-labelledby="features-heading">
-          <div className="text-center mb-16">
-            <h2 id="features-heading" className="text-2xl sm:text-4xl font-mono font-bold tracking-wide text-oceanic-noir mb-4">
-              ENGINEERED FOR POWER
+        {/* 6-CARD FEATURE GRID (Why Choose Us) - Desktop padding py-16 lg:py-20 w-full relative */}
+        <section id="features" className={`py-16 lg:py-20 w-full px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b-2 flex flex-col gap-6 ${
+          theme === 'light' ? 'border-[#172836]' : 'border-white/10'
+        }`} aria-labelledby="features-heading">
+          <div className="text-center">
+            <h2 id="features-heading" className={`text-2xl sm:text-3xl font-bold tracking-wide mb-3 uppercase ${headingStyle}`}>
+              ENGINEERED FOR <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]">POWER</span>
             </h2>
-            <p className="text-sm sm:text-base text-oceanic-noir/60 font-sans max-w-2xl mx-auto">
+            <p className={`max-w-2xl mx-auto ${bodyTextStyle}`}>
               Our core infrastructure delivers sub-millisecond data routing layers backed by cryptographically secure isolated micro-state engines.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Card 1 */}
-            <div className="group bg-white border border-oceanic-noir/15 hover:border-forsythia/60 rounded-xl p-6 transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex flex-col justify-between min-h-[180px] shadow-none">
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] md:col-span-2 ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
               <div>
-                <div className="w-12 h-12 rounded-lg bg-oceanic-noir/[0.03] border border-oceanic-noir/10 flex items-center justify-center mb-6 group-hover:bg-forsythia/10 group-hover:border-forsythia/40 transition-all duration-180">
-                  <img src="/assets/SVGs/cube-16-solid.svg" className="w-6 h-6 text-oceanic-noir group-hover:text-forsythia transition-colors" alt="" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/cube-16-solid.svg" className={`w-5 h-5 transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
                 </div>
-                <h3 className="font-mono font-bold text-base text-oceanic-noir mb-2">Distributed Consensus</h3>
-                <p className="font-sans text-xs text-oceanic-noir/65 leading-relaxed">
-                  Fault-tolerant transactional state synchronization across global clusters.
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>AI Automation</h3>
+                <p className={bodyTextStyle}>
+                  Automate repetitive workflows using intelligent AI agents.
                 </p>
               </div>
             </div>
 
             {/* Card 2 */}
-            <div className="group bg-white border border-oceanic-noir/15 hover:border-forsythia/60 rounded-xl p-6 transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex flex-col justify-between min-h-[180px] shadow-none">
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
               <div>
-                <div className="w-12 h-12 rounded-lg bg-oceanic-noir/[0.03] border border-oceanic-noir/10 flex items-center justify-center mb-6 group-hover:bg-forsythia/10 group-hover:border-forsythia/40 transition-all duration-180">
-                  <img src="/assets/SVGs/chart-pie.svg" className="w-6 h-6 text-oceanic-noir group-hover:text-forsythia transition-colors" alt="" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/chart-pie.svg" className={`w-5 h-5 transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
                 </div>
-                <h3 className="font-mono font-bold text-base text-oceanic-noir mb-2">Predictive Analytics</h3>
-                <p className="font-sans text-xs text-oceanic-noir/65 leading-relaxed">
-                  Dynamic machine learning pipelines executing speculative queries in parallel.
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>Predictive Analytics</h3>
+                <p className={bodyTextStyle}>
+                  Forecast trends before they happen using machine learning.
                 </p>
               </div>
             </div>
 
             {/* Card 3 */}
-            <div className="group bg-white border border-oceanic-noir/15 hover:border-forsythia/60 rounded-xl p-6 transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex flex-col justify-between min-h-[180px] shadow-none">
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
               <div>
-                <div className="w-12 h-12 rounded-lg bg-oceanic-noir/[0.03] border border-oceanic-noir/10 flex items-center justify-center mb-6 group-hover:bg-forsythia/10 group-hover:border-forsythia/40 transition-all duration-180">
-                  <img src="/assets/SVGs/arrow-path.svg" className="w-6 h-6 text-oceanic-noir group-hover:text-forsythia transition-colors animate-[spin_10s_linear_infinite] group-hover:animate-[spin_3s_linear_infinite]" alt="" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/link-solid.svg" className={`w-5 h-5 transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
                 </div>
-                <h3 className="font-mono font-bold text-base text-oceanic-noir mb-2">Iterative Sync</h3>
-                <p className="font-sans text-xs text-oceanic-noir/65 leading-relaxed">
-                  Sub-millisecond data mutation layers providing real-time local updates.
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>Secure Infrastructure</h3>
+                <p className={bodyTextStyle}>
+                  Enterprise-grade encryption with SOC2 compliant architecture.
                 </p>
               </div>
             </div>
 
             {/* Card 4 */}
-            <div className="group bg-white border border-oceanic-noir/15 hover:border-forsythia/60 rounded-xl p-6 transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] cursor-pointer flex flex-col justify-between min-h-[180px] shadow-none">
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
               <div>
-                <div className="w-12 h-12 rounded-lg bg-oceanic-noir/[0.03] border border-oceanic-noir/10 flex items-center justify-center mb-6 group-hover:bg-forsythia/10 group-hover:border-forsythia/40 transition-all duration-180">
-                  <img src="/assets/SVGs/cog-8-tooth.svg" className="w-6 h-6 text-oceanic-noir group-hover:text-forsythia transition-colors" alt="" />
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/arrow-path.svg" className={`w-5 h-5 animate-[spin_10s_linear_infinite] transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
                 </div>
-                <h3 className="font-mono font-bold text-base text-oceanic-noir mb-2">Automated Pipeline</h3>
-                <p className="font-sans text-xs text-oceanic-noir/65 leading-relaxed">
-                  Trigger-driven ingestion agents with automated structural schema checks.
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>Lightning Performance</h3>
+                <p className={bodyTextStyle}>
+                  Real-time execution optimized for scale.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 5 */}
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
+              <div>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/link.svg" className={`w-5 h-5 transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
+                </div>
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>API First</h3>
+                <p className={bodyTextStyle}>
+                  Integrate seamlessly with over 300+ services.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 6 */}
+            <div className={`group border-2 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] cursor-pointer flex flex-col justify-between min-h-[160px] md:col-span-2 ${
+              theme === 'light' 
+                ? 'bg-white border-[#172836] text-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,0.15)]' 
+                : 'bg-white/[0.02] border-white/20 text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.05)] hover:border-white'
+            }`}>
+              <div>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-4 transition-all duration-180 border-2 ${
+                  theme === 'light' 
+                    ? 'bg-[#172836]/[0.03] border-[#172836] group-hover:bg-forsythia group-hover:border-[#172836]' 
+                    : 'bg-white/[0.05] border-white/20 group-hover:bg-forsythia group-hover:border-forsythia'
+                }`}>
+                  <img src="/assets/SVGs/cog-8-tooth.svg" className={`w-5 h-5 transition-all duration-180 ${theme === 'light' ? 'group-hover:brightness-0' : 'invert group-hover:invert-0 group-hover:brightness-0'}`} alt="" />
+                </div>
+                <h3 className={`font-mono font-bold text-sm mb-1.5 ${headingStyle}`}>Global Availability</h3>
+                <p className={bodyTextStyle}>
+                  Deploy workflows worldwide with minimal latency.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* REAL-TIME PERFORMANCE ANALYTICS DASHBOARD */}
-        <section id="analytics" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b border-oceanic-noir/10" aria-labelledby="analytics-heading">
-          <div className="bg-white border border-oceanic-noir/15 rounded-xl p-6 sm:p-10 relative overflow-hidden shadow-none">
+        {/* REAL-TIME PERFORMANCE ANALYTICS DASHBOARD - Spacing Rebalanced */}
+        <section id="analytics" className="py-16 lg:py-20 w-full relative px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 flex flex-col gap-6" aria-labelledby="analytics-heading">
+          <div className={`border-2 rounded-xl p-6 sm:p-8 relative overflow-hidden transition-colors duration-500 ${
+            theme === 'light' 
+              ? 'bg-white border-[#172836] shadow-[4px_4px_0px_0px_rgba(23,40,54,1)]' 
+              : 'bg-white/[0.02] border-white/20 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.15)]'
+          }`}>
             
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10 relative z-10">
               <div className="max-w-xl">
-                <div className="flex items-center gap-2 mb-4">
-                  <img src="/assets/SVGs/chart-pie.svg" className="w-5 h-5 text-oceanic-noir" alt="" />
-                  <span className="font-mono text-xs text-oceanic-noir/70 tracking-wider uppercase">TELEMETRY METRICS</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <img src="/assets/SVGs/chart-pie.svg" className={`w-4 h-4 ${theme === 'light' ? '' : 'invert'}`} alt="" />
+                  <span className={`tracking-wider uppercase font-mono text-[10px] ${theme === 'light' ? 'text-[#172836]/70' : 'text-white/70'}`}>TELEMETRY METRICS</span>
                 </div>
-                <h2 id="analytics-heading" className="text-2xl sm:text-4xl font-mono font-bold tracking-tight text-oceanic-noir mb-6">
-                  REAL-TIME SYSTEM LATENCY
+                <h2 id="analytics-heading" className={`text-2xl sm:text-3xl font-bold tracking-tight mb-4 uppercase ${headingStyle}`}>
+                  REAL-TIME SYSTEM <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]">LATENCY</span>
                 </h2>
-                <p className="font-sans text-sm sm:text-base text-oceanic-noir/70 leading-relaxed mb-8">
+                <p className={`mb-6 ${bodyTextStyle}`}>
                   Watch live query executions scale across our isolated micro-networks. Verify speeds, database lock thresholds, and schema mapping matrices directly in the client dashboard.
                 </p>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-3 gap-6 pt-6 border-t border-oceanic-noir/10">
+                <div className={`grid grid-cols-3 gap-6 p-5 rounded-xl mt-6 bg-[#172836]/5 dark:bg-white/[0.02] ${borderStyle}`}>
                   <div>
-                    <div className="font-mono text-2xl sm:text-3xl font-extrabold text-oceanic-noir">12ms</div>
-                    <div className="font-sans text-[10px] sm:text-xs text-oceanic-noir/50 uppercase mt-1">Avg Latency</div>
+                    <div className={`font-extrabold text-xl sm:text-2xl ${headingStyle}`}>12ms</div>
+                    <div className="font-mono text-[9px] sm:text-[10px] uppercase mt-0.5 text-slate-900 dark:text-white opacity-60">Avg Latency</div>
                   </div>
                   <div>
-                    <div className="font-mono text-2xl sm:text-3xl font-extrabold text-deep-saffron">10x</div>
-                    <div className="font-sans text-[10px] sm:text-xs text-oceanic-noir/50 uppercase mt-1">Data Speed</div>
+                    <div className="font-mono text-xl sm:text-2xl font-extrabold text-deep-saffron">10x</div>
+                    <div className="font-mono text-[9px] sm:text-[10px] uppercase mt-0.5 text-slate-900 dark:text-white opacity-60">Data Speed</div>
                   </div>
                   <div>
-                    <div className="font-mono text-2xl sm:text-3xl font-extrabold text-oceanic-noir/80">99.9%</div>
-                    <div className="font-sans text-[10px] sm:text-xs text-oceanic-noir/50 uppercase mt-1">SLA Uptime</div>
+                    <div className={`font-extrabold text-xl sm:text-2xl ${headingStyle}`}>99.9%</div>
+                    <div className="font-mono text-[9px] sm:text-[10px] uppercase mt-0.5 text-slate-900 dark:text-white opacity-60">SLA Uptime</div>
                   </div>
                 </div>
               </div>
 
               {/* Graphic Telemetry Panel */}
-              <div className="w-full lg:w-[500px] bg-white border border-oceanic-noir/15 rounded-xl p-6 shadow-none relative">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-oceanic-noir/10">
+              <div className={`w-full lg:w-[460px] border-2 rounded-xl p-5 relative transition-colors ${
+                theme === 'light' ? 'bg-white border-[#172836]' : 'bg-[#142330] border-white/20'
+              }`}>
+                <div className={`flex items-center justify-between mb-4 pb-3 border-b-2 ${borderStyle}`}>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs text-oceanic-noir/70">REGION: US-EAST-1</span>
+                    <span className={`font-mono text-[10px] uppercase tracking-tight text-slate-900 dark:text-white`}>REGION: US-EAST-1</span>
                   </div>
                 </div>
 
                 {/* Simulated Telemetry Wave */}
-                <div className="relative py-4">
-                  <svg viewBox="0 0 500 150" className="w-full h-32 text-nocturnal-expedition" fill="none">
-                    {/* Grid lines */}
-                    <line x1="0" y1="30" x2="500" y2="30" stroke="rgba(23,40,54,0.05)" strokeWidth="1" />
-                    <line x1="0" y1="75" x2="500" y2="75" stroke="rgba(23,40,54,0.05)" strokeWidth="1" />
-                    <line x1="0" y1="120" x2="500" y2="120" stroke="rgba(23,40,54,0.05)" strokeWidth="1" />
+                <div className="relative py-2">
+                  <svg viewBox="0 0 500 100" className="w-full h-full text-nocturnal-expedition" fill="none">
+                    {/* Horizontal Grid lines */}
+                    <line x1="0" y1="25" x2="500" y2="25" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                    <line x1="0" y1="50" x2="500" y2="50" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                    <line x1="0" y1="75" x2="500" y2="75" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
                     
-                    {/* Gradient Area - Jagged */}
-                    <path
-                      d="M 0,110 L 25,100 L 50,115 L 75,70 L 100,85 L 125,75 L 150,105 L 175,50 L 200,60 L 225,45 L 250,95 L 275,110 L 300,85 L 325,120 L 350,95 L 375,55 L 400,65 L 425,40 L 450,75 L 475,50 L 500,60 L 500,150 L 0,150 Z"
-                      fill="url(#wave-gradient)"
-                      opacity="0.08"
-                    />
+                    {/* Vertical Grid lines */}
+                    <line x1="100" y1="0" x2="100" y2="100" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                    <line x1="200" y1="0" x2="200" y2="100" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                    <line x1="300" y1="0" x2="300" y2="100" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                    <line x1="400" y1="0" x2="400" y2="100" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
 
-                    {/* Wave Path - Jagged */}
+                    {/* Smooth glowing trace path (Cubic Bezier Curve) */}
                     <path
-                      d="M 0,110 L 25,100 L 50,115 L 75,70 L 100,85 L 125,75 L 150,105 L 175,50 L 200,60 L 225,45 L 250,95 L 275,110 L 300,85 L 325,120 L 350,95 L 375,55 L 400,65 L 425,40 L 450,75 L 475,50 L 500,60"
-                      stroke="var(--color-nocturnal-expedition)"
-                      strokeWidth="2"
+                      d="M 0,70 C 50,75 70,30 110,45 C 160,65 190,85 240,60 C 290,30 320,10 360,40 C 410,80 430,90 500,20"
+                      stroke="#FFC801"
+                      strokeWidth="2.5"
                       strokeLinecap="round"
-                      strokeLinejoin="round"
+                    />
+                    {/* Glow fill underneath */}
+                    <path
+                      d="M 0,70 C 50,75 70,30 110,45 C 160,65 190,85 240,60 C 290,30 320,10 360,40 C 410,80 430,90 500,20 L 500,100 L 0,100 Z"
+                      fill="url(#latency-glow)"
+                      opacity="0.1"
                     />
 
                     <defs>
-                      <linearGradient id="wave-gradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="var(--color-nocturnal-expedition)" />
-                        <stop offset="100%" stopColor="var(--color-arctic-powder)" stopOpacity="0" />
+                      <linearGradient id="latency-glow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#FFC801" />
+                        <stop offset="100%" stopColor="#FFC801" stopOpacity="0" />
                       </linearGradient>
                     </defs>
                   </svg>
-
-                  {/* Intersecting metric dot overlay */}
-                  <div className="absolute top-12 left-1/2 -translate-x-1/2 w-3 h-3 bg-forsythia rounded-full border-2 border-oceanic-noir" />
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* BENTO GRID SHOWCASE */}
-        <section id="bento" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b border-oceanic-noir/10" aria-labelledby="bento-heading">
-          <div className="text-center mb-16">
-            <h2 id="bento-heading" className="text-2xl sm:text-4xl font-mono font-bold tracking-wide text-oceanic-noir mb-4">
-              FEATURES EXPLORER
+        {/* BENTO GRID SHOWCASE (FEATURES EXPLORER) - Rebalanced padding for premium rhythm */}
+        <section
+          id="bento"
+          className={`scroll-mt-20 transition-colors duration-500 w-full py-8 lg:py-10 relative flex flex-col gap-4 ${
+            theme === 'light'
+              ? 'bg-forsythia text-oceanic-noir border-y-4 border-[#172836]'
+              : 'bg-[#172836]/40 border-y-2 border-white/10 text-white'
+          }`}
+          aria-labelledby="bento-heading"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-4">
+              <h2 id="bento-heading" className={`text-2xl sm:text-3xl font-bold tracking-wide mb-3 uppercase ${headingStyle}`}>
+                FEATURES <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-oceanic-noir shadow-[2px_2px_0px_0px_rgba(23,40,54,1)] dark:border-white dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">EXPLORER</span>
+              </h2>
+              <p className={`max-w-2xl mx-auto ${bodyTextStyle}`}>
+                Explore the core features engineered to construct, monitor, and secure your automated data orchestration pipelines.
+              </p>
+            </div>
+
+            {/* Feature 2: Bento-to-Accordion Wrapper Component */}
+            <BentoAccordionWrapper theme={theme} />
+          </div>
+        </section>
+
+        {/* HOW IT WORKS SECTION (Interactive Pipeline Node Engine Terminal) - py-16 lg:py-20 w-full relative */}
+        <section id="process" className={`py-16 lg:py-20 w-full relative px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b-2 flex flex-col gap-6 ${
+          theme === 'light' ? 'border-[#172836]' : 'border-white/10'
+        }`} aria-labelledby="process-heading">
+          <div className="text-center">
+            <h2 id="process-heading" className={`text-2xl sm:text-3xl font-bold tracking-wide mb-3 uppercase ${headingStyle}`}>
+              HOW IT <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]">WORKS</span>
             </h2>
-            <p className="text-sm sm:text-base text-oceanic-noir/60 font-sans max-w-2xl mx-auto">
-              Hover over cards on desktop or expand panels on mobile. Your active focus index transfers seamlessly between layout breaklines.
+            <p className={`max-w-2xl mx-auto ${bodyTextStyle}`}>
+              Three simple phases to transition from manual operations to fully automated, secure pipelines.
             </p>
           </div>
 
-          {/* Feature 2: Bento-to-Accordion Wrapper Component */}
-          <BentoAccordionWrapper />
+          <PipelineTerminal theme={theme} />
         </section>
 
-        {/* PRICING PLANS SECTION */}
-        <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b border-oceanic-noir/10" aria-labelledby="pricing-heading">
-          <div className="text-center mb-16">
-            <h2 id="pricing-heading" className="text-2xl sm:text-4xl font-mono font-bold tracking-wide text-oceanic-noir mb-4">
-              HIERARCHICAL PLANS
+        {/* PRICING PLANS SECTION - Spacing Rebalanced */}
+        <section id="pricing" className="py-16 lg:py-20 w-full relative px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 flex flex-col gap-6" aria-labelledby="pricing-heading">
+          <div className="text-center">
+            <h2 id="pricing-heading" className={`text-2xl sm:text-3xl font-bold tracking-wide mb-3 uppercase ${headingStyle}`}>
+              HIERARCHICAL <span className="inline-block bg-forsythia text-oceanic-noir px-3 py-1 font-mono uppercase tracking-wider border-2 border-oceanic-noir shadow-[2px_2px_0px_0px_rgba(23,40,54,1)] dark:border-white dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">PLANS</span>
             </h2>
-            <p className="text-sm sm:text-base text-oceanic-noir/60 font-sans max-w-2xl mx-auto">
+            <p className={`max-w-2xl mx-auto ${bodyTextStyle}`}>
               Select standard subscriptions calculated dynamically based on regional variables. Fully isolated performance guarantees zero render delays.
             </p>
           </div>
 
           {/* Feature 1: Pricing Component */}
-          <PricingMatrix />
+          <PricingMatrix theme={theme} />
+        </section>
+
+        {/* TESTIMONIALS SECTION (Marblism-style Neo-Brutalist Band with Auto Scroll) - Spacing Rebalanced */}
+        <section
+          id="testimonials"
+          className="w-full bg-[#FFC801] text-slate-900 py-16 lg:py-20 px-4 border-y-4 border-slate-900 overflow-hidden relative font-sans scroll-mt-20 flex flex-col gap-6"
+          aria-labelledby="testimonials-heading"
+        >
+          <div className="max-w-7xl mx-auto flex flex-col items-center">
+            <h2
+              id="testimonials-heading"
+              className="text-center text-4xl md:text-5xl font-mono font-black tracking-tighter text-slate-900 mb-6"
+            >
+              AUTOMATED WORKFLOWS. ELITE EFFICIENCY.
+            </h2>
+
+            {/* Product Trust Metric Badges Tier */}
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+              {/* Badge 1 (Product Hunt Style) */}
+              <div className="bg-white border-2 border-slate-900 rounded-lg px-3 py-1 flex items-center gap-2 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">
+                <span>#1 Automation Platform</span>
+              </div>
+
+              {/* Badge 2 (Trust Score Style) */}
+              <div className="bg-white border-2 border-slate-900 rounded-lg px-3 py-1 flex items-center gap-2 text-xs font-mono font-bold shadow-[2px_2px_0px_0px_rgba(15,23,42,1)]">
+                <span className="flex gap-0.5">⭐ ⭐ ⭐ ⭐ ⭐</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Multi-Card Neo-Brutalist Layout Track (Auto-Scrolling Marquee) */}
+          <div className="w-full overflow-hidden relative">
+            <div className="flex w-max gap-6 animate-marquee-reviews hover:[animation-play-state:paused] py-4">
+              {/* Track 1: First 10 items */}
+              <div className="flex gap-6">
+                {REVIEWS.map((review, index) => (
+                  <article
+                    key={`review-1-${index}`}
+                    className="min-w-[320px] max-w-[350px] bg-white border-2 border-slate-900 rounded-2xl p-6 flex-shrink-0 flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] text-slate-900"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div
+                          style={{ backgroundColor: review.avatarBg }}
+                          className="w-10 h-10 rounded-full border-2 border-slate-900 flex items-center justify-center font-mono font-bold text-sm text-slate-900 select-none"
+                        >
+                          {review.initials}
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-xs uppercase tracking-tight text-slate-900">
+                            {review.name}
+                          </div>
+                          <div className="font-mono text-[10px] uppercase tracking-tight text-slate-900 font-semibold">
+                            {review.role}
+                          </div>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            <span className="flex gap-0.5 text-[10px]">⭐ ⭐ ⭐ ⭐ ⭐</span>
+                          </div>
+                        </div>
+                      </div>
+                      <h3 className="font-mono font-bold text-base uppercase tracking-tight text-slate-900 leading-tight mb-2">
+                        {review.headline}
+                      </h3>
+                      <p className="font-sans text-sm font-medium text-slate-900 tracking-normal normal-case leading-relaxed">
+                        {review.body}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              {/* Track 2: Duplicate of the 10 items for infinite looping */}
+              <div className="flex gap-6" aria-hidden="true">
+                {REVIEWS.map((review, index) => (
+                  <article
+                    key={`review-2-${index}`}
+                    className="min-w-[320px] max-w-[350px] bg-white border-2 border-slate-900 rounded-2xl p-6 flex-shrink-0 flex flex-col justify-between transition-transform duration-300 hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(15,23,42,1)] shadow-[4px_4px_0px_0px_rgba(15,23,42,1)] text-slate-900"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <div
+                          style={{ backgroundColor: review.avatarBg }}
+                          className="w-10 h-10 rounded-full border-2 border-slate-900 flex items-center justify-center font-mono font-bold text-sm text-slate-900 select-none"
+                        >
+                          {review.initials}
+                        </div>
+                        <div>
+                          <div className="font-mono font-bold text-xs uppercase tracking-tight text-slate-900">
+                            {review.name}
+                          </div>
+                          <div className="font-mono text-[10px] uppercase tracking-tight text-slate-900 font-semibold">
+                            {review.role}
+                          </div>
+                          <div className="flex items-center gap-0.5 mt-0.5">
+                            <span className="flex gap-0.5 text-[10px]">⭐ ⭐ ⭐ ⭐ ⭐</span>
+                          </div>
+                        </div>
+                      </div>
+                      <h3 className="font-mono font-bold text-base uppercase tracking-tight text-slate-900 leading-tight mb-2">
+                        {review.headline}
+                      </h3>
+                      <p className="font-sans text-sm font-medium text-slate-900 tracking-normal normal-case leading-relaxed">
+                        {review.body}
+                      </p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ SECTION (4-Row Native Details FAQ Accordion) - Spacing Rebalanced */}
+        <section id="faq" className={`py-16 lg:py-20 w-full relative px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto scroll-mt-20 border-b-2 flex flex-col gap-6 ${
+          theme === 'light' ? 'border-[#172836]' : 'border-white/10'
+        }`} aria-labelledby="faq-heading">
+          <div className="text-center mb-8">
+            <h2 id="faq-heading" className={`text-2xl sm:text-3xl font-bold tracking-wide mb-3 uppercase ${headingStyle}`}>
+              GOT <span className="inline-block bg-forsythia text-[#172836] px-3 py-1 font-mono uppercase tracking-wider border-2 border-[#172836] shadow-[2px_2px_0px_0px_rgba(23,40,54,1)]">QUESTIONS?</span>
+            </h2>
+            <p className={`max-w-2xl mx-auto ${bodyTextStyle}`}>
+              Everything you need to know about setting up enclaves, pipelines, and workspace billing plans.
+            </p>
+          </div>
+
+          <FAQAccordion theme={theme} />
+        </section>
+
+        {/* FINAL CALL-TO-ACTION SECTION - Spacing Rebalanced */}
+        <section id="cta" className="py-16 lg:py-20 w-full relative px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto scroll-mt-20 flex flex-col gap-6 text-center" aria-labelledby="cta-heading">
+          <h2 id="cta-heading" className={`text-2xl sm:text-3xl font-bold tracking-tight leading-relaxed uppercase ${headingStyle}`}>
+            Ready to redefine productivity? Experience enterprise-grade AI automation with zero complexity.
+          </h2>
+          <div className="flex justify-center pt-2">
+            <a
+              href="#pricing"
+              className="w-full sm:w-auto font-mono text-xs px-8 py-4 bg-forsythia text-[#172836] font-bold rounded-xl border-2 border-[#172836] transition-all duration-180 ease-out hover:scale-[1.02] active:scale-[0.98] text-center flex items-center justify-center gap-2 cursor-pointer shadow-[2px_2px_0px_0px_rgba(23,40,54,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,0.15)]"
+            >
+              Start Free
+              <img src="/assets/SVGs/arrow-trending-up.svg" className="w-4 h-4 text-oceanic-noir" alt="" />
+            </a>
+          </div>
         </section>
       </main>
 
       {/* SITEMAP FOOTER */}
-      <footer className="border-t border-oceanic-noir/10 bg-white/80 pt-16 pb-12 px-4 sm:px-6 lg:px-8 relative" aria-label="Footer Navigation">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+      <footer className={`transition-colors duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] border-t-2 pt-8 pb-6 px-4 sm:px-6 lg:px-8 relative ${
+        theme === 'light' ? 'bg-white border-[#172836]' : 'bg-white/[0.01] border-white/10'
+      }`} aria-label="Footer Navigation">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 mb-8">
           {/* Column 1: Brand Info */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
             <div className="flex items-center gap-2">
-              <img src="/assets/SVGs/cube-16-solid.svg" className="w-5 h-5 text-oceanic-noir" alt="" />
-              <span className="font-mono font-bold text-base tracking-wider text-oceanic-noir">AEGIS.AI</span>
+              <img src="/assets/SVGs/cube-16-solid.svg" className={`w-5 h-5 ${theme === 'light' ? '' : 'invert'}`} alt="" />
+              <span className={`font-mono font-bold text-base tracking-wider ${headingStyle}`}>AEGIS.AI</span>
             </div>
-            <p className="font-sans text-xs text-oceanic-noir/60 leading-relaxed max-w-xs">
+            <p className={`font-sans text-xs leading-relaxed max-w-xs ${theme === 'light' ? 'text-[#172836]/60' : 'text-white/80'}`}>
               Secure, lightning-fast data pipeline automation orchestrator. Engineered for maximum transaction throughput and absolute state resilience.
             </p>
           </div>
 
           {/* Column 2: Product Sitemap */}
           <div>
-            <h4 className="font-mono text-xs font-bold text-oceanic-noir/50 tracking-wider uppercase mb-4">PRODUCT</h4>
-            <ul className="flex flex-col gap-2.5 text-xs font-sans text-oceanic-noir/65">
-              <li><a href="#features" className="hover:text-forsythia transition-colors">Core Features</a></li>
-              <li><a href="#analytics" className="hover:text-forsythia transition-colors">Analytics Engine</a></li>
-              <li><a href="#pricing" className="hover:text-forsythia transition-colors">Pricing Plans</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">API References</a></li>
+            <h4 className={`font-mono text-xs font-bold tracking-wider uppercase mb-3 ${theme === 'light' ? 'text-[#172836]/50' : 'text-white/50'}`}>PRODUCT</h4>
+            <ul className={`flex flex-col gap-2 text-xs font-sans ${theme === 'light' ? 'text-[#172836]/65' : 'text-white/80'}`}>
+              <li><a href="#features" className="hover:text-forsythia transition-colors font-bold">Core Features</a></li>
+              <li><a href="#analytics" className="hover:text-forsythia transition-colors font-bold">Analytics Engine</a></li>
+              <li><a href="#pricing" className="hover:text-forsythia transition-colors font-bold">Pricing Plans</a></li>
+              <li><a href="#faq" className="hover:text-forsythia transition-colors font-bold">FAQ</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">API References</a></li>
             </ul>
           </div>
 
           {/* Column 3: Platform Resources */}
           <div>
-            <h4 className="font-mono text-xs font-bold text-oceanic-noir/50 tracking-wider uppercase mb-4">RESOURCES</h4>
-            <ul className="flex flex-col gap-2.5 text-xs font-sans text-oceanic-noir/65">
-              <li><a href="/" className="hover:text-forsythia transition-colors">Documentation</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">Security Audits</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">Telemetry Nodes</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">Service Status</a></li>
+            <h4 className={`font-mono text-xs font-bold tracking-wider uppercase mb-3 ${theme === 'light' ? 'text-[#172836]/50' : 'text-white/50'}`}>RESOURCES</h4>
+            <ul className={`flex flex-col gap-2 text-xs font-sans ${theme === 'light' ? 'text-[#172836]/65' : 'text-white/80'}`}>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Documentation</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Security Audits</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Telemetry Nodes</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Service Status</a></li>
             </ul>
           </div>
 
           {/* Column 4: Legal & Compliance */}
           <div>
-            <h4 className="font-mono text-xs font-bold text-oceanic-noir/50 tracking-wider uppercase mb-4">COMPLIANCE</h4>
-            <ul className="flex flex-col gap-2.5 text-xs font-sans text-oceanic-noir/65">
-              <li><a href="/" className="hover:text-forsythia transition-colors">Terms of Operations</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">Privacy Crypts</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">SLA Metrics</a></li>
-              <li><a href="/" className="hover:text-forsythia transition-colors">ISO 27001 Certification</a></li>
+            <h4 className={`font-mono text-xs font-bold tracking-wider uppercase mb-3 ${theme === 'light' ? 'text-[#172836]/50' : 'text-white/50'}`}>COMPLIANCE</h4>
+            <ul className={`flex flex-col gap-2 text-xs font-sans ${theme === 'light' ? 'text-[#172836]/65' : 'text-white/80'}`}>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Terms of Operations</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">Privacy Crypts</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">SLA Metrics</a></li>
+              <li><a href="/" className="hover:text-forsythia transition-colors font-bold">ISO 27001 Certification</a></li>
             </ul>
           </div>
         </div>
 
         {/* Footer Bottom Bar */}
-        <div className="max-w-7xl mx-auto pt-8 border-t border-oceanic-noir/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-mono text-[10px] text-oceanic-noir/40">
-            &copy; {new Date().getFullYear()} AEGIS AUTOMATIONS INC. ALL RIGHTS RESERVED.
+        <div className={`max-w-7xl mx-auto pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4 ${
+          theme === 'light' ? 'border-[#172836]/30' : 'border-white/10'
+        }`}>
+          <span className={`font-mono text-[9px] ${theme === 'light' ? 'text-[#172836]/40' : 'text-white/40'}`}>
+            © {new Date().getFullYear()} AEGIS AUTOMATIONS INC. ALL RIGHTS RESERVED.
           </span>
         </div>
       </footer>
+      {/* Premium Toast Notification */}
+      {showComingSoon && (
+        <div className="fixed bottom-6 right-6 z-[100] transition-all duration-300 transform translate-y-0">
+          <div className="bg-[#FFC801] text-[#172836] font-mono font-bold text-xs uppercase tracking-wider px-5 py-3 border-2 border-[#172836] shadow-[4px_4px_0px_0px_rgba(23,40,54,1)] rounded-xl flex items-center gap-2">
+            <span className="w-2 h-2 bg-[#172836] rounded-full animate-ping" />
+            Coming soon!
+          </div>
+        </div>
+      )}
     </div>
   );
 }
