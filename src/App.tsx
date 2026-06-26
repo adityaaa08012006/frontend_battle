@@ -219,7 +219,7 @@ export default function App() {
     }`}>
       
       {/* HEADER / NAVIGATION */}
-      <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-[#0d2a3a]/90 backdrop-blur-md border-b-2 border-slate-900/10 dark:border-white/10 px-6 py-3.5 flex items-center justify-between">
+      <header className="sticky top-0 z-50 w-full bg-white/90 dark:bg-[#0d2a3a]/90 backdrop-blur-md border-b-2 border-slate-900/10 dark:border-white/10 px-6 py-3.5 flex items-center justify-between relative">
         <nav className="w-full flex items-center justify-between" aria-label="Main Navigation">
           {/* Logo */}
           <div className="flex items-center gap-2">
@@ -304,7 +304,7 @@ export default function App() {
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className={`md:hidden border-t-2 px-4 py-6 flex flex-col gap-6 transition-colors duration-500 ${
+          <div className={`absolute top-full left-0 w-full md:hidden border-b-2 px-6 py-6 flex flex-col gap-6 shadow-[0_6px_20px_rgba(0,0,0,0.15)] transition-colors duration-500 z-50 ${
             theme === 'light' ? 'bg-white border-[#172836]' : 'bg-[#142330] border-white/10'
           }`}>
             <ul className="flex flex-col gap-4 font-mono text-base">
